@@ -16,7 +16,7 @@ type Config struct {
 	MyBuildStatus          string          `env:"BITRISE_BUILD_STATUS,required"`
 	AppSlug                string          `env:"BITRISE_APP_SLUG,required"`
 	AccessToken            stepconf.Secret `env:"access_token,required"`
-	BuildSlugs             string          `env:"buildslugs,required"`
+	BuildSlugs             string          `env:"buildslugs"`
 	BuildArtifactsSavePath string          `env:"build_artifacts_save_path"`
 	AbortBuildsOnFail      string          `env:"abort_on_fail"`
 	IsVerboseLog           bool            `env:"verbose,required"`
@@ -48,7 +48,12 @@ func main() {
 
 	app := bitrise.NewAppWithDefaultURL(cfg.AppSlug, string(cfg.AccessToken))
 
-	log.Infof("Waiting for builds:")
+	if cfg.BuildSlugs == "" {
+		log.Infof("Solo build: bypassing script")
+		return
+	} else {
+		log.Infof("Waiting for builds:")
+	}
 
 	buildSlugs := strings.Split(cfg.BuildSlugs, "\n")
 
