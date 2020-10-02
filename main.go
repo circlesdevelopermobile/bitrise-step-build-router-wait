@@ -12,6 +12,8 @@ import (
 
 // Config ...
 type Config struct {
+	ParentBuild            string          `env:"SOURCE_BITRISE_BUILD_NUMBER"`
+	MyBuildStatus          string          `env:"BITRISE_BUILD_STATUS,required"`
 	AppSlug                string          `env:"BITRISE_APP_SLUG,required"`
 	AccessToken            stepconf.Secret `env:"access_token,required"`
 	BuildSlugs             string          `env:"buildslugs,required"`
@@ -34,6 +36,14 @@ func main() {
 	stepconf.Print(cfg)
 	fmt.Println()
 
+	// Skip if child build
+	if cfg.ParentBuild != "" {
+		log.Infof("Bypassing script, child build of %s", cfg.ParentBuild)
+		return
+	} else {
+		log.Infof("I am the master. Waiting for children")
+	}
+
 	log.SetEnableDebugLog(cfg.IsVerboseLog)
 
 	app := bitrise.NewAppWithDefaultURL(cfg.AppSlug, string(cfg.AccessToken))
@@ -41,6 +51,18 @@ func main() {
 	log.Infof("Waiting for builds:")
 
 	buildSlugs := strings.Split(cfg.BuildSlugs, "\n")
+
+	// Abort everyone if I failed
+	if cfg.MyBuildStatus == "1" {
+		for _, buildSlug := range buildSlugs {
+			abortErr := app.AbortBuild(buildSlug, "Abort on Fail - Parent build failed")
+			if abortErr != nil {
+				log.Warnf("failed to abort build, error: %s", abortErr)
+			}
+			log.Donef("Build " + buildSlug + " aborted due to associated build failure")
+		}
+		os.Exit(1)
+	}
 
 	if err := app.WaitForBuilds(buildSlugs, func(build bitrise.Build) {
 		var failReason string

@@ -1,4 +1,4 @@
-title: "Bitrise Wait for Build"
+title: "Android Build Router Wait"
 summary: "Waiting for the given builds to be finished"
 description: "Waiting for the given builds to be finished"
 website: https://github.com/bitrise-steplib/bitrise-step-build-router-wait
